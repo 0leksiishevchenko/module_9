@@ -1,10 +1,13 @@
+import functools
+from inspect import signature
 contacts = {}
 
 def input_error(func):
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (KeyError, ValueError, IndexError) as e:
+        except (KeyError, ValueError, IndexError, TypeError) as e:
             return f"Input error: {str(e)}"
     return wrapper
 
@@ -60,15 +63,16 @@ def get_handler(command):
         "show all": show_all,
     }
 
-    command_key, *args = command.split(" ")
+    _, *args = command.split(" ")
     for key, handler in handlers.items():
-        if key.startswith(command_key):
-            try:
-                return handler(*args)
+        if key in command.lower():
+            expected_args = len(signature(handler).parameters)
+            if len(args) != expected_args:
                 
-            except TypeError:
                 return handler()
 
+            return handler(*args)
+                                    
     return "Invalid command. Please try again."
 
 def main():
